@@ -1,6 +1,3 @@
-// ============================================
-// TOPBAR
-// ============================================
 import React from 'react';
 import { cn } from '@/utils';
 import { useAppStore } from '@/stores/app-store';
@@ -9,6 +6,7 @@ import { useLicenseStore } from '@/stores/license-store';
 import { Menu, Search, Sun, Moon, Settings, Lock, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '@/services/auth-service';
+import toast from 'react-hot-toast';
 
 export const Topbar: React.FC = () => {
   const { sidebarOpen, toggleSidebar, theme, setTheme } = useAppStore();
@@ -17,10 +15,12 @@ export const Topbar: React.FC = () => {
   const navigate = useNavigate();
   const [searchFocused, setSearchFocused] = React.useState(false);
   const [ownerName, setOwnerName] = React.useState<string>('');
+  const [isPasswordEnabled, setIsPasswordEnabled] = React.useState(false);
   const searchRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     authService.getOwnerUsername().then(setOwnerName);
+    authService.isPasswordProtected().then(setIsPasswordEnabled);
   }, []);
 
   // Ctrl+K shortcut
@@ -39,7 +39,15 @@ export const Topbar: React.FC = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
-  const handleLockApp = () => {
+  const handleLockApp = async () => {
+    if (!isPasswordEnabled) {
+      toast('Bạn chưa bật mật khẩu bảo vệ. Hãy vào Cài đặt → Bảo Mật để thiết lập trước.', {
+        icon: '🔒',
+        duration: 3000,
+      });
+      navigate('/settings');
+      return;
+    }
     authService.lock();
     window.location.reload();
   };

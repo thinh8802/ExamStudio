@@ -50,6 +50,7 @@ export const AuthLockPage: React.FC<AuthLockPageProps> = ({ onAuthenticated }) =
         const isManualLock = authService.isManualLock();
 
         if (!isProtected && !isManualLock) {
+          // Đã có tài khoản nhưng không có mật khẩu và chưa khóa: vào thẳng app
           onAuthenticated();
           return;
         }
@@ -59,8 +60,11 @@ export const AuthLockPage: React.FC<AuthLockPageProps> = ({ onAuthenticated }) =
         if (name && name !== 'Chủ sở hữu' && name !== 'Người học') {
           setUsername(name);
         }
+        // isProtected=true: hiện form mật khẩu
+        // isProtected=false nhưng isManualLock=true: tình huống này không xảy ra nữa sau khi fix isManualLock()
         setIsSetup(isProtected);
       } else {
+        // Lần đầu chạy, chưa có tài khoản: hiện form khởi tạo
         setIsSetup(false);
       }
     };

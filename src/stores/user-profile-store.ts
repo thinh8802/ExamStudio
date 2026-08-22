@@ -3,6 +3,7 @@
 // ============================================
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { authService } from '@/services/auth-service';
 
 export type UserRole = 'student' | 'teacher' | 'self_learner';
 
@@ -90,13 +91,18 @@ export const useUserProfileStore = create<UserProfileState>()(
       },
 
       setNickname: (nickname) =>
-        set((state) => ({
-          profile: {
-            ...state.profile,
-            nickname: nickname.trim() || state.profile.fullName,
-            updatedAt: new Date().toISOString(),
-          },
-        })),
+        set((state) => {
+          const trimmed = nickname.trim() || state.profile.fullName;
+          // Đồng bộ sang authService để màn hình khóa hiển thị đúng tên
+          authService.updateUsername(trimmed);
+          return {
+            profile: {
+              ...state.profile,
+              nickname: trimmed,
+              updatedAt: new Date().toISOString(),
+            },
+          };
+        }),
 
       setRole: (role) =>
         set((state) => ({
@@ -117,17 +123,22 @@ export const useUserProfileStore = create<UserProfileState>()(
         })),
 
       completeOnboarding: (nickname, role, avatarColor, studyGoal) =>
-        set((state) => ({
-          profile: {
-            ...state.profile,
-            nickname: nickname.trim() || state.profile.fullName,
-            role,
-            avatarColor,
-            studyGoal: studyGoal || state.profile.studyGoal,
-            hasCompletedOnboarding: true,
-            updatedAt: new Date().toISOString(),
-          },
-        })),
+        set((state) => {
+          const trimmedNickname = nickname.trim() || state.profile.fullName;
+          // Đồng bộ sang authService
+          authService.updateUsername(trimmedNickname);
+          return {
+            profile: {
+              ...state.profile,
+              nickname: trimmedNickname,
+              role,
+              avatarColor,
+              studyGoal: studyGoal || state.profile.studyGoal,
+              hasCompletedOnboarding: true,
+              updatedAt: new Date().toISOString(),
+            },
+          };
+        }),
 
       getDisplayName: () => {
         const p = get().profile;

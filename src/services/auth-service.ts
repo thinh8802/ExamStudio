@@ -84,9 +84,19 @@ class AuthService {
   private lockUntil: number = 0;
 
   /**
-   * Check if app was manually locked or navigated to landing
+   * Check if app was manually locked.
+   * IMPORTANT: Always returns false when password protection is disabled —
+   * no point locking an app that has no password to unlock with.
    */
   isManualLock(): boolean {
+    const data = getStoredAccountData();
+    if (data) {
+      try {
+        const parsed = JSON.parse(data);
+        // If no password hash, app is always unlocked — never block entry
+        if (!parsed.password_hash) return false;
+      } catch { /* fall through */ }
+    }
     const isLocked = sessionStorage.getItem(SESSION_LOCK_KEY) === 'true' ||
       LEGACY_SESSION_LOCK_KEYS.some(k => sessionStorage.getItem(k) === 'true');
     return this.manualLock || isLocked;
@@ -102,6 +112,23 @@ class AuthService {
         sessionStorage.removeItem(k);
       }
     }
+  }
+
+  /**
+   * Update the owner username without touching the password hash.
+   * Safe to call whenever the nickname changes.
+   */
+  updateUsername(username: string): void {
+    const data = getStoredAccountData();
+    if (!data) return;
+    try {
+      const parsed = JSON.parse(data);
+      const trimmed = username.trim();
+      if (!trimmed || parsed.username === trimmed) return;
+      parsed.username = trimmed;
+      parsed.updated_at = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+    } catch { /* ignore */ }
   }
 
   /**
@@ -133,17 +160,30 @@ class AuthService {
   }
 
   /**
-   * Skip password setup (Passwordless mode)
+   * Skip password setup (Passwordless mode).
+   * Preserves existing username if already set — never overwrites a nickname.
    */
   async skipAccountSetup(username?: string): Promise<{ success: boolean }> {
+    // Preserve any existing username/nickname
+    const existingData = getStoredAccountData();
+    let existingUsername = username?.trim() || 'Người học';
+    if (existingData) {
+      try {
+        const parsed = JSON.parse(existingData);
+        if (parsed.username && parsed.username !== 'Người học') {
+          existingUsername = parsed.username;
+        }
+      } catch { /* ignore */ }
+    }
+
     const record: OwnerAccountRecord = {
       id: 'master_owner',
-      username: username?.trim() || 'Người học',
+      username: existingUsername,
       password_hash: '',
       salt_hex: '',
       iterations: 0,
       algorithm: 'NONE',
-      created_at: new Date().toISOString(),
+      created_at: existingData ? JSON.parse(existingData).created_at || new Date().toISOString() : new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(record));

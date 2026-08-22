@@ -121,9 +121,13 @@ const App: React.FC = () => {
 
         // Kiểm tra xem người dùng có bật mật khẩu không
         const isProtected = await authService.isPasswordProtected();
-        const isManualLock = authService.isManualLock();
-        if (!isProtected && !isManualLock) {
+        if (!isProtected) {
+          // Không có mật khẩu: dọn sạch flag khóa cũ và vào thẳng app
+          authService.setManualLock(false);
           setIsAuthenticated(true);
+        } else if (!authService.isManualLock()) {
+          // Có mật khẩu nhưng không bị khóa thủ công (e.g. đã auth từ trước trong session)
+          // isAuthenticated đã là true nếu authService.isAuthenticated() = true
         }
 
         await Promise.all([

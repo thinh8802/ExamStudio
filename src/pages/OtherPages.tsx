@@ -1762,16 +1762,8 @@ export const SettingsPage: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* 2. Tài khoản chủ & Mật khẩu */}
-          <Card className="rounded-3xl border border-[hsl(var(--border))] shadow-xs">
-            <CardContent className="p-5 space-y-3">
-              <h2 className="font-bold text-sm flex items-center gap-2 text-[hsl(var(--foreground))]">
-                <Lock size={16} className="text-[hsl(var(--primary))]" /> Tài khoản chủ & Mật khẩu
-              </h2>
-              <p className="text-xs text-[hsl(var(--muted-foreground))]">Đổi mật khẩu bảo vệ dữ liệu và ứng dụng.</p>
-              <ChangePasswordForm />
-            </CardContent>
-          </Card>
+
+
 
           {/* 3. Dữ liệu & Sao lưu */}
           <Card className="rounded-3xl border border-[hsl(var(--border))] shadow-xs">
