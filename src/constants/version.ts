@@ -3,7 +3,7 @@
 // Formatted as MAJOR.MINOR.PATCH (Infinite SemVer)
 // =========================================================
 
-export const APP_VERSION = '3.3.5';
+export const APP_VERSION = '3.3.6';
 export const APP_NAME = 'ExamPrep Studio';
 export const APP_DISPLAY_VERSION = `v${APP_VERSION}`;
 export const APP_BUILD_DATE = '2026-08-22';

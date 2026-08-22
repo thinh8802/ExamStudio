@@ -20,7 +20,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   license: {
     getStatus: () => ipcRenderer.invoke('license:getStatus'),
     getMachineId: () => ipcRenderer.invoke('license:getMachineId'),
-    activate: (licenseKey) => ipcRenderer.invoke('license:activate', licenseKey),
+    activate: (licenseKey, options) => ipcRenderer.invoke('license:activate', licenseKey, options),
     deactivate: () => ipcRenderer.invoke('license:deactivate'),
   },
 });
