@@ -31,6 +31,8 @@ interface AuthLockPageProps {
 
 export const AuthLockPage: React.FC<AuthLockPageProps> = ({ onAuthenticated }) => {
   const [isSetup, setIsSetup] = useState<boolean | null>(null);
+  // true: đã có tài khoản nhưng không có mật khẩu, đang bị khóa thủ công
+  const [isPasswordlessLock, setIsPasswordlessLock] = useState(false);
   const [ownerName, setOwnerName] = useState<string>('Chủ sở hữu');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -50,7 +52,7 @@ export const AuthLockPage: React.FC<AuthLockPageProps> = ({ onAuthenticated }) =
         const isManualLock = authService.isManualLock();
 
         if (!isProtected && !isManualLock) {
-          // Đã có tài khoản nhưng không có mật khẩu và chưa khóa: vào thẳng app
+          // Đã có tài khoản, không có mật khẩu, chưa khóa: vào thẳng app
           onAuthenticated();
           return;
         }
@@ -60,9 +62,15 @@ export const AuthLockPage: React.FC<AuthLockPageProps> = ({ onAuthenticated }) =
         if (name && name !== 'Chủ sở hữu' && name !== 'Người học') {
           setUsername(name);
         }
-        // isProtected=true: hiện form mật khẩu
-        // isProtected=false nhưng isManualLock=true: tình huống này không xảy ra nữa sau khi fix isManualLock()
-        setIsSetup(isProtected);
+
+        if (!isProtected && isManualLock) {
+          // Khóa thủ công nhưng không có mật khẩu: hiện landing page với nút "Vào Học Ngay"
+          setIsPasswordlessLock(true);
+          setIsSetup(false); // để hiện phần nút action phía dưới
+        } else {
+          // isProtected=true: hiện form mật khẩu
+          setIsSetup(isProtected);
+        }
       } else {
         // Lần đầu chạy, chưa có tài khoản: hiện form khởi tạo
         setIsSetup(false);
@@ -305,11 +313,15 @@ export const AuthLockPage: React.FC<AuthLockPageProps> = ({ onAuthenticated }) =
                   </div>
                   
                   <h2 className="text-xl font-bold text-[hsl(var(--foreground))] tracking-tight">
-                    {isSetup ? 'Mở Khóa Không Gian Học' : 'Khởi Tạo Không Gian Học'}
+                    {isSetup ? 'Mở Khóa Không Gian Học'
+                      : isPasswordlessLock ? `Chào mừng trở lại, ${ownerName}!`
+                      : 'Khởi Tạo Không Gian Học'}
                   </h2>
                   <p className="text-xs text-[hsl(var(--muted-foreground))]">
                     {isSetup
                       ? `Nhập mật khẩu để truy cập dữ liệu của ${ownerName}`
+                      : isPasswordlessLock
+                      ? 'Bạn đang dùng chế độ không mật khẩu. Nhấn vào để tiếp tục học.'
                       : 'Thiết lập tài khoản người học để bắt đầu quản lý đề thi'}
                   </p>
                 </div>
@@ -324,7 +336,7 @@ export const AuthLockPage: React.FC<AuthLockPageProps> = ({ onAuthenticated }) =
 
                 {/* Forms */}
                 {isSetup ? (
-                  /* Form: Unlock Existing Account */
+                  /* Form: Unlock Existing Account (có mật khẩu) */
                   <form onSubmit={handleUnlock} className="space-y-4">
                     <div>
                       <label className="block text-xs font-semibold text-[hsl(var(--foreground))] uppercase tracking-wider mb-1.5">
@@ -359,8 +371,29 @@ export const AuthLockPage: React.FC<AuthLockPageProps> = ({ onAuthenticated }) =
                       )}
                     </button>
                   </form>
+                ) : isPasswordlessLock ? (
+                  /* Passwordless Lock: đang dùng chế độ không mật khẩu, chỉ cần 1 nút vào */
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-2.5 text-xs text-emerald-600 dark:text-emerald-400">
+                      <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+                      <span>Chế độ không cần mật khẩu — dữ liệu vẫn bảo mật củc bộ.</span>
+                    </div>
+                    <button
+                      onClick={onAuthenticated}
+                      className="w-full py-3.5 px-6 rounded-xl bg-[hsl(var(--primary))] hover:opacity-90 active:scale-[0.98] text-white font-semibold text-sm shadow-md shadow-[hsl(var(--primary)/0.25)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <Zap className="w-4 h-4" />
+                      <span>Vào Học Ngay</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                    <p className="text-center text-[11px] text-[hsl(var(--muted-foreground))]">
+                      Để bật khóa màn hình, hãy vào{' '}
+                      <span className="font-semibold text-[hsl(var(--primary))]">Cài đặt → Bảo Mật</span>{' '}
+                      để thiết lập mật khẩu.
+                    </p>
+                  </div>
                 ) : (
-                  /* Form: New User Setup */
+                  /* Form: New User Setup (lần đầu chạy) */
                   <form onSubmit={handleSetup} className="space-y-3.5">
                     <div>
                       <label className="block text-xs font-semibold text-[hsl(var(--foreground))] uppercase tracking-wider mb-1">

@@ -9,6 +9,9 @@ import type { LicensePayload, LicenseStatus, LicenseValidationResult, StoredLice
 const LOCAL_STORAGE_KEY = 'examprep_offline_license_cache';
 const LEGACY_STORAGE_KEY = 'examstudio_offline_license_cache';
 const BROWSER_HWID_KEY = 'eps_browser_machine_id';
+// Thời gian tối thiểu giữa hai lần kiểm tra revoke online (15 phút)
+const REVOKE_CHECK_INTERVAL_MS = 15 * 60 * 1000;
+const REVOKE_CHECK_TS_KEY = 'eps_revoke_check_ts';
 
 export class LicenseService {
   /**
@@ -101,7 +104,49 @@ export class LicenseService {
   }
 
   /**
-   * Lấy trạng thái kích hoạt hiện tại của ứng dụng (100% Offline)
+   * Kiểm tra online xem license có bị xóa/revoke trên Supabase không.
+   * Chỉ chạy nếu có internet và có Supabase config.
+   * Trả về: 'ok' | 'revoked' | 'not_found' | 'skip' (không có mạng / chưa cấu hình)
+   */
+  private async checkRevocationOnline(licenseKey: string, force = false): Promise<'ok' | 'revoked' | 'not_found' | 'skip'> {
+    if (!isSupabaseConfigured() || !licenseKey) return 'skip';
+
+    // Throttle: chỉ check mỗi 15 phút — force=true (load trang) vẫn giữ cooldown 5 giây
+    const lastCheck = parseInt(localStorage.getItem(REVOKE_CHECK_TS_KEY) || '0', 10);
+    const minCooldown = force ? 5000 : REVOKE_CHECK_INTERVAL_MS;
+    if (Date.now() - lastCheck < minCooldown) return 'skip';
+
+    try {
+      // Dùng RPC check_license_status (SECURITY DEFINER) — an toàn, bypass RLS
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/check_license_status`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ p_license_key: licenseKey.trim() }),
+        signal: AbortSignal.timeout(8000),
+      });
+
+      // Lưu timestamp ngay khi nhận được response (trước parse JSON)
+      // để tránh spam nếu server trả về lỗi/malformed JSON
+      localStorage.setItem(REVOKE_CHECK_TS_KEY, Date.now().toString());
+
+      if (!res.ok) return 'skip';
+
+      const data: { found: boolean; status: string } = await res.json();
+      if (!data.found) return 'not_found'; // đã bị xóa khỏi Supabase
+      if (data.status === 'revoked') return 'revoked'; // đã bị thu hồi
+      return 'ok';
+    } catch {
+      return 'skip'; // timeout / offline — giữ nguyên
+    }
+  }
+
+  /**
+   * Lấy trạng thái kích hoạt hiện tại của ứng dụng
+   * (Local cache — với online revoke check khi có mạng)
    */
   public async getStatus(): Promise<LicenseStatus> {
     try {
@@ -111,6 +156,15 @@ export class LicenseService {
       if (window.electronAPI?.license) {
         const result = await window.electronAPI.license.getStatus();
         if (result.isLicensed && result.payload) {
+          // Kiểm tra revoke online ngay khi load trang (force=true), không block UX
+          this.checkRevocationOnline(result.rawKey || '', true).then(async (revStatus) => {
+            if (revStatus === 'revoked' || revStatus === 'not_found') {
+              await this.deactivate();
+              // Force reload để UI cập nhật
+              window.location.reload();
+            }
+          }).catch(() => {});
+
           return {
             isLicensed: true,
             payload: result.payload,
@@ -142,6 +196,14 @@ export class LicenseService {
       if (!stored.licenseKey) {
         return { isLicensed: false, payload: null, rawKey: null, activatedAt: null, expiresAt: null, machineId };
       }
+
+      // Kiểm tra revoke online ngay khi load trang (force=true, chạy song song)
+      this.checkRevocationOnline(stored.licenseKey, true).then(async (revStatus) => {
+        if (revStatus === 'revoked' || revStatus === 'not_found') {
+          await this.deactivate();
+          window.location.reload();
+        }
+      }).catch(() => {});
 
       // Kiểm tra hạn sử dụng nếu có
       if (stored.expiresAt) {

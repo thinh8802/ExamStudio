@@ -84,19 +84,9 @@ class AuthService {
   private lockUntil: number = 0;
 
   /**
-   * Check if app was manually locked.
-   * IMPORTANT: Always returns false when password protection is disabled —
-   * no point locking an app that has no password to unlock with.
+   * Check if app was manually locked by the user.
    */
   isManualLock(): boolean {
-    const data = getStoredAccountData();
-    if (data) {
-      try {
-        const parsed = JSON.parse(data);
-        // If no password hash, app is always unlocked — never block entry
-        if (!parsed.password_hash) return false;
-      } catch { /* fall through */ }
-    }
     const isLocked = sessionStorage.getItem(SESSION_LOCK_KEY) === 'true' ||
       LEGACY_SESSION_LOCK_KEYS.some(k => sessionStorage.getItem(k) === 'true');
     return this.manualLock || isLocked;
@@ -167,11 +157,15 @@ class AuthService {
     // Preserve any existing username/nickname
     const existingData = getStoredAccountData();
     let existingUsername = username?.trim() || 'Người học';
+    let existingCreatedAt = new Date().toISOString();
     if (existingData) {
       try {
         const parsed = JSON.parse(existingData);
         if (parsed.username && parsed.username !== 'Người học') {
           existingUsername = parsed.username;
+        }
+        if (parsed.created_at) {
+          existingCreatedAt = parsed.created_at;
         }
       } catch { /* ignore */ }
     }
@@ -183,7 +177,7 @@ class AuthService {
       salt_hex: '',
       iterations: 0,
       algorithm: 'NONE',
-      created_at: existingData ? JSON.parse(existingData).created_at || new Date().toISOString() : new Date().toISOString(),
+      created_at: existingCreatedAt,
       updated_at: new Date().toISOString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(record));

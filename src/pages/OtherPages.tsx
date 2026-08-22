@@ -2308,6 +2308,39 @@ const LicenseInfoCard: React.FC = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [countdown, setCountdown] = React.useState<string | null>(null);
+
+  // Tính thời điểm hết hạn thực tế
+  const getExpireMs = React.useCallback(() => {
+    if (expiresAt) return new Date(expiresAt).getTime();
+    if (activatedAt && payload?.dur && payload.dur > 0)
+      return new Date(activatedAt).getTime() + payload.dur * 1000;
+    if (payload?.exp && payload.exp > 0) return payload.exp * 1000;
+    return null;
+  }, [expiresAt, activatedAt, payload]);
+
+  React.useEffect(() => {
+    if (payload?.type !== 'subscription') { setCountdown(null); return; }
+    const update = () => {
+      const expMs = getExpireMs();
+      if (!expMs) { setCountdown(null); return; }
+      const diff = expMs - Date.now();
+      if (diff <= 0) { setCountdown('Đã hết hạn'); return; }
+      const totalSec = Math.floor(diff / 1000);
+      const d = Math.floor(totalSec / 86400);
+      const h = Math.floor((totalSec % 86400) / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      const s = totalSec % 60;
+      if (d > 0) {
+        setCountdown(`${d} ngày ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
+      } else {
+        setCountdown(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
+      }
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [payload, getExpireMs]);
 
   const handleCopy = () => {
     if (rawKey) {
@@ -2405,16 +2438,32 @@ const LicenseInfoCard: React.FC = () => {
             )}
 
             {payload?.type === 'subscription' && (
-              <div className="flex items-center justify-between text-[11px] text-amber-500 font-semibold">
-                <span>Hết hạn vào lúc:</span>
-                <span className="font-mono">
-                  {expiresAt
-                    ? new Date(expiresAt).toLocaleString('vi-VN')
-                    : (activatedAt && payload.dur
-                        ? new Date(new Date(activatedAt).getTime() + payload.dur * 1000).toLocaleString('vi-VN')
-                        : (payload.exp ? new Date(payload.exp * 1000).toLocaleString('vi-VN') : '---'))}
-                </span>
-              </div>
+              <>
+                <div className="flex items-center justify-between text-[11px] text-amber-500 font-semibold">
+                  <span>Hết hạn vào lúc:</span>
+                  <span className="font-mono">
+                    {expiresAt
+                      ? new Date(expiresAt).toLocaleString('vi-VN')
+                      : (activatedAt && payload.dur
+                          ? new Date(new Date(activatedAt).getTime() + payload.dur * 1000).toLocaleString('vi-VN')
+                          : (payload.exp ? new Date(payload.exp * 1000).toLocaleString('vi-VN') : '---'))}
+                  </span>
+                </div>
+                {countdown && (
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-[hsl(var(--muted-foreground))]">Còn lại:</span>
+                    <span className={`font-mono font-bold tabular-nums ${
+                      countdown === 'Đã hết hạn'
+                        ? 'text-rose-500'
+                        : countdown.startsWith('0:') || (countdown.split(' ')[0] === '0')
+                          ? 'text-rose-400'
+                          : 'text-emerald-500'
+                    }`}>
+                      ⏳ {countdown}
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
