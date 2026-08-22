@@ -1,0 +1,30 @@
+Question 1: What is the solution to the linear equation $2x + 5 = 15$?
+A) $x = 3$
+*B) $x = 5$
+C) $x = 7$
+D) $x = 10$
+Subject: Mathematics
+Chapter: Algebra
+Difficulty: easy
+Tags: algebra, linear-equations
+Explanation: Subtract 5 from both sides: $2x = 10$. Divide by 2: $x = 5$.
+
+Question 2: Which programming languages run natively inside web browsers?
+*A) JavaScript
+B) C++
+*C) WebAssembly
+D) Python
+Subject: Computer Science
+Chapter: Web Development
+Difficulty: medium
+Tags: web, programming, js
+Explanation: Modern web browsers natively support JavaScript execution and WebAssembly bytecode.
+
+Question 3: Water boils at $100^\circ\text{C}$ at standard atmospheric pressure (1 atm).
+*A) True
+B) False
+Subject: Chemistry
+Chapter: Thermodynamics
+Difficulty: easy
+Tags: chemistry, state-of-matter
+Explanation: At 1 atm pressure, the boiling point of pure water is defined as $100^\circ\text{C}$.
