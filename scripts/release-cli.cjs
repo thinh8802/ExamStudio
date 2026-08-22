@@ -82,16 +82,21 @@ function askOption() {
       console.log('\n🔨 2. Đang biên dịch mã nguồn giao diện (Vite & TypeScript)...');
       execSync('npm run build', { cwd: quizAppDir, stdio: 'inherit' });
 
-      console.log(`\n💾 3. Đồng bộ 100% tất cả các file về phiên bản ${tag} & Đẩy lên GitHub...`);
-      const tempBranch = `clean_${Date.now()}`;
-      execSync(`git checkout --orphan ${tempBranch}`, { cwd: quizAppDir, stdio: 'pipe' });
-      execSync('git add -A', { cwd: quizAppDir, stdio: 'pipe' });
-      execSync(`git commit -m "ExamPrep Studio ${tag} - Official Production Release"`, { cwd: quizAppDir, stdio: 'pipe' });
-      execSync('git branch -D master', { cwd: quizAppDir, stdio: 'pipe' });
-      execSync('git branch -m master', { cwd: quizAppDir, stdio: 'pipe' });
-      execSync(`git tag -a ${tag} -m "ExamPrep Studio Release ${tag}" -f`, { cwd: quizAppDir, stdio: 'pipe' });
-      execSync('git push -f origin master', { cwd: quizAppDir, stdio: 'inherit' });
-      execSync(`git push origin ${tag} --force`, { cwd: quizAppDir, stdio: 'inherit' });
+      console.log(`\n💾 3. Lưu phiên bản ${tag} & Đẩy lên GitHub (Giữ nguyên toàn bộ lịch sử commit)...`);
+      try {
+        execSync('git add -A', { cwd: quizAppDir, stdio: 'pipe' });
+        const status = execSync('git status --porcelain', { cwd: quizAppDir, encoding: 'utf8' }).trim();
+        if (status) {
+          execSync(`git commit -m "chore(release): bump version to ${tag}"`, { cwd: quizAppDir, stdio: 'pipe' });
+          console.log(`  ✅ Đã tạo commit cập nhật phiên bản: chore(release): bump version to ${tag}`);
+        }
+        execSync(`git tag -a ${tag} -m "ExamPrep Studio Release ${tag}" -f`, { cwd: quizAppDir, stdio: 'pipe' });
+        execSync('git push origin HEAD', { cwd: quizAppDir, stdio: 'inherit' });
+        execSync(`git push origin ${tag} --force`, { cwd: quizAppDir, stdio: 'inherit' });
+        console.log(`  ✅ Đã đẩy commit và tag ${tag} lên GitHub an toàn.`);
+      } catch (gitErr) {
+        console.warn('  ⚠️ Ghi chú khi đồng bộ Git:', gitErr.message);
+      }
 
       console.log('\n' + '='.repeat(72));
       console.log(`📦 4. Đang tiến hành biên dịch và đóng gói Setup .exe (khoảng 30 giây)...`);
