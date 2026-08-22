@@ -1,0 +1,52 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Production build outputs
+dist
+dist-electron
+release
+win-unpacked
+*.exe
+*.blockmap
+*.nsis.7z
+*.zip
+
+# Testing & logs
+coverage
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor & IDE
+.vscode
+.idea
+*.swp
+*.swo
+.DS_Store
+
+# Environment & Secrets (NEVER COMMIT)
+.env
+.env.local
+.env.*
+!.env.example
+
+# Cryptography & Developer Keys (NEVER COMMIT PRIVATE KEYS)
+keys/
+*.key
+*.p12
+*.pfx
+license_private.pem
+*private*.pem
+developer_tools/keys/
+
+# Local databases & user data
+data/
+*.sqlite
+*.sqlite3
+*.db
+
+# Vite cache
+.vite
