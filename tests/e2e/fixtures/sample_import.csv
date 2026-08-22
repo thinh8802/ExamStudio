@@ -1,0 +1,4 @@
+Stem,Type,Option A,Option B,Option C,Option D,Correct Answer,Subject,Chapter,Difficulty,Tags,Explanation
+"What is the derivative of $f(x) = \sin(x)$ with respect to $x$?",single_choice,"$\cos(x)$","$-\cos(x)$","$\sin(x)$","$-\sin(x)$","A","Mathematics","Derivatives","easy","calculus;derivatives;katex","The standard derivative rule for sine is $\frac{d}{dx}\sin(x) = \cos(x)$."
+"Which of the following numbers are prime?",multiple_choice,"2","3","4","5","A,B,D","Mathematics","Number Theory","medium","primes;math","2, 3, and 5 are prime numbers. 4 is a composite number ($2 \times 2$)."
+"Is the speed of light $c \approx 3 \times 10^8 \text{ m/s}$ in a vacuum constant for all inertial frames?",true_false,"True","False","","","A","Physics","Electromagnetism","easy","physics;constants","According to Special Relativity, the speed of light in a vacuum is constant for all inertial observers."
